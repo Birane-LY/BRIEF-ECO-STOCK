@@ -1,0 +1,43 @@
+# === Python ===
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+externals/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# === Django ===
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+media/
+staticfiles/
+
+# === JetBrains (PyCharm / WebStorm) ===
+.idea/
+
+# === VS Code ===
+.vscode/
+*.code-workspace
+
+# === Système (OS) ===
+.DS_Store
+Thumbs.db
+
+# === Tests & Couverture ===
+.toast/
+.pytest_cache/
+htmlcov/
+.coverage
+.coverage.*
+.cache

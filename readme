@@ -1,0 +1,251 @@
+# Gestion d'Entrepôt et API de Traçabilité des Produits (Django REST Framework)
+
+Ce projet est une API de gestion logistique permettant de suivre l'état de fraîcheur des produits, de gérer les stocks au sein de différents entrepôts et de planifier des transferts sécurisés sous authentification JWT.
+
+## Fonctionnalités Clés
+
+* **Sécurisation fine** : Consultation libre, création réservée aux utilisateurs authentifiés, modifications/suppressions limitées aux administrateurs.
+* **Logique Métier Automatisée** : Blocage du transfert des produits en état d'expiration.
+* **Audit d'Entrepôt** : Calcul dynamique et instantané des volumes de stockage.
+
+---
+
+## Authentification (JWT)
+
+L'API utilise des jetons JSON Web Tokens. Sauf pour les requêtes de lecture (GET), vous devez inclure le jeton d'accès dans l'en-tête de vos requêtes HTTP :
+
+```http
+Authorization: Bearer <votre_access_token>
+```
+
+1. **Obtenir un jeton** : Envoyer un POST sur `/api/token/` avec `username` et `password`.
+2. **Rafraîchir un jeton** : Envoyer un POST sur `/api/token/refresh/` avec le `refresh` token.
+
+---
+
+## Documentation des Endpoints
+
+Copiez-collez le bloc ci-dessous dans l'éditeur [Swagger Editor](https://swagger.io) pour visualiser et tester l'interface de l'API graphiquement.
+
+```yaml
+openapi: 3.0.3
+info:
+  title: API Logistique et Gestion d'Entrepôts
+  description: Spécification des points d'accès pour la gestion des stocks, des transferts et des audits métiers.
+  version: 1.0.0
+servers:
+  - url: http://127.0.0
+paths:
+  /token/:
+    post:
+      summary: Obtenir une paire de jetons JWT
+      description: Permet de s'authentifier pour obtenir un jeton d'accès (Access) et un jeton de rafraîchissement (Refresh).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Authentification réussie.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access:
+                    type: string
+                  refresh:
+                    type: string
+        '401':
+          description: Identifiants invalides.
+
+  /warehouses/{id}/audit/:
+    get:
+      summary: Auditer un entrepôt
+      description: Renvoie le nombre total de produits actuellement stockés dans l'entrepôt spécifié. Accessible publiquement.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Rapport d'audit généré.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  warehouse:
+                    type: string
+                    example: "Entrepôt Principal"
+                  total_products:
+                    type: integer
+                    example: 42
+        '404':
+          description: Entrepôt non trouvé.
+
+  /products/{id}/move/:
+    post:
+      summary: Transfert sécurisé de produit (Vérification d'expiration)
+      description: Modifie l'entrepôt d'un produit. L'opération échoue si le produit est périmé. Requis une authentification.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - warehouse_id
+              properties:
+                warehouse_id:
+                  type: integer
+                  example: 2
+      responses:
+        '200':
+          description: Produit transféré avec succès.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Product moved successfully."
+                  product:
+                    type: string
+                    example: "Lait demi-écrémé"
+                  new_warehouse:
+                    type: string
+                    example: "Entrepôt B"
+        '400':
+          description: Requête invalide (ID obligatoire ou produit périmé).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "On ne peut pas déplacer un produit périmé."
+        '401':
+          description: Non authentifié.
+        '404':
+          description: Produit ou entrepôt cible introuvable.
+
+  /products/{id}/transfer/:
+    post:
+      summary: Transfert forcé de produit (Sans restriction)
+      description: Transfère un produit vers un autre entrepôt sans appliquer de validation sur l'état de péremption du produit. Requis une authentification.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - warehouse_id
+              properties:
+                warehouse_id:
+                  type: integer
+      responses:
+        '200':
+          description: Transfert forcé effectué.
+        '400':
+          description: ID de l'entrepôt manquant.
+        '401':
+          description: Non authentifié.
+        '404':
+          description: Entrepôt ou produit non trouvé.
+
+  /products/{id}/audit/:
+    get:
+      summary: Analyser la fraîcheur d'un produit
+      description: Force l'exécution de l'algorithme d'analyse des dates de durabilité minimale et retourne les indicateurs d'alerte. Requis une authentification.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: État du produit analysé.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Audited"
+                  current_state:
+                    type: string
+                    example: "expiration"
+                  has_alert:
+                    type: boolean
+                    example: true
+                  is_expired:
+                    type: boolean
+                    example: false
+        '401':
+          description: Non authentifié.
+        '404':
+          description: Produit introuvable.
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+```
+
+---
+
+## Commandes de Déploiement Initial
+
+Suivez ces étapes pour mettre à jour votre environnement et appliquer les derniers changements structurels :
+
+```bash
+# 1. Installer la dépendance d'authentification JWT
+pip install djangorestframework-simplejwt
+
+# 2. Générer le fichier de migration pour l'ajout des Enums et du champ Email
+python manage.py makemigrations
+
+# 3. Appliquer les structures sur la base de données
+python manage.py migrate
+
+# 4. Lancer le serveur de développement
+python manage.py runserver
+```
