@@ -31,23 +31,22 @@ class Warehouse(models.Model):
     verbose_name = "Entrepôt"
     verbose_name_plural = "Entrepôts"
 
-  def verify_status(self, product):
-    """ Update the warehouse status to active if a valid product is associated. """
-    if product:
-      self.status = 'ACTIVE'
-    else:
-      self.status = self.status
-
   @property
   def container_capacity(self):
-    """ Getter: Calculates total of the capacity for warehouse and the number of containers """
-    usable_area = self.capacity * EFFICIENCY_RATIO
+    """ Getter: Calculates total capacity for warehouse and the number of containers """
+    # If capacity is negative, force the use of 0
+    safe_capacity = max(0, self.capacity) 
+    usable_area = safe_capacity * EFFICIENCY_RATIO
     containers_on_ground = math.floor(usable_area/SURFACE_AREA)
     return containers_on_ground
   
   @container_capacity.setter
   def container_capacity(self, target_capacity):
-    """ Setter: Calculates the exact ground needed for a target capacity. """
+    """ Setter: Calculates the exact ground needed for a target capacity """
+    # If the input is negative, automatically reset it to 0
+    if target_capacity < 0:
+        target_capacity = 0
+        
     required_surface = (target_capacity * SURFACE_AREA) / EFFICIENCY_RATIO
     self.capacity = required_surface
 
@@ -67,6 +66,9 @@ class Product(models.Model):
     verbose_name = "Produit"
     verbose_name_plural = "Produits"
 
+  def __str__(self):
+    return self.name
+
   def verify_state(self):
     """ Update a product's status and return True if it's necessary to make an alert """
     today = timezone.now().date()
@@ -75,24 +77,31 @@ class Product(models.Model):
     if self.expiration_date is None:
       self.state = ProductStatus.INDISPONIBLE
 
+      return False, False
+
     elif self.expiration_date <= today:
       self.state = ProductStatus.EXPIRATION
-      self.save()
+     
       return True, True
 
     elif self.expiration_date <= expiration_limit:
       self.state = ProductStatus.EXPIRATION
-      self.save()
+     
       return True, False
 
     elif self.order_set.filter(order_status=OrderStatus.IN_PROGRESS).exists():
-        self.state = ProductStatus.RESERVED
+      self.state = ProductStatus.RESERVED
 
     else:
       self.state = ProductStatus.DISPONIBLE
 
-    self.save()
     return False, False
+
+  def save(self, *args, **kwargs):
+    """ Automatically runs verification logic before saving to the database """
+    self.verify_state()
+    super().save(*args, **kwargs)
+
 
 class Order(models.Model):
   product = models.ForeignKey(Product, on_delete=models.CASCADE)

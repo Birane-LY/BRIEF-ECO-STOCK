@@ -4,7 +4,7 @@ from .models import WareHouseManager, Warehouse, Product, Order
 @admin.register(WareHouseManager)
 class WareHouseManagerAdmin(admin.ModelAdmin):
     """ Admin configuration for WareHouseManager model. """
-    list_display = ('name', 'age' 'email')
+    list_display = ('name', 'age', 'email')
     search_fields = ('name',)
 
 @admin.register(Warehouse)

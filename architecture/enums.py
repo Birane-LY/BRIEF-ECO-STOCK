@@ -12,6 +12,6 @@ class ProductStatus(str, models.Choices):
     INDISPONIBLE = "indisponible", "Indisponible" 
 
 class OrderStatus(str, models.Choices):
-    IN_PROGRESS = "IN_PROGRESS", "En cours / Réservé"
-    COMPLETED = "COMPLETED", "Terminé / Livré"
-    CANCELLED = "CANCELLED", "Annulé"
+    IN_PROGRESS = "in_progress", "En cours / Réservé"
+    COMPLETED = "completed", "Terminé / Livré"
+    CANCELLED = "cancelled", "Annulé"
