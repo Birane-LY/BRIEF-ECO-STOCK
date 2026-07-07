@@ -99,8 +99,10 @@ class Product(models.Model):
 
   def save(self, *args, **kwargs):
     """ Automatically runs verification logic before saving to the database """
-    self.verify_state()
     super().save(*args, **kwargs)
+    self.verify_state()
+    super().save(update_fields=["state"])
+    
 
 
 class Order(models.Model):
