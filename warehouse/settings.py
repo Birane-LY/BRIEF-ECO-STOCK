@@ -38,8 +38,8 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),  # Le jeton reste valide pendant 24 heures
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=7), # Le jeton de rafraîchissement dure 7 jours
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7), 
 }
 
 

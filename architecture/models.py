@@ -77,17 +77,17 @@ class Product(models.Model):
     if self.expiration_date is None:
       self.state = ProductStatus.INDISPONIBLE
 
-      return False, False
+      return False
 
     elif self.expiration_date <= today:
       self.state = ProductStatus.EXPIRATION
      
-      return True, True
+      return True
 
     elif self.expiration_date <= expiration_limit:
       self.state = ProductStatus.EXPIRATION
      
-      return True, False
+      return True
 
     elif self.order_set.filter(order_status=OrderStatus.IN_PROGRESS).exists():
       self.state = ProductStatus.RESERVED
@@ -95,7 +95,7 @@ class Product(models.Model):
     else:
       self.state = ProductStatus.DISPONIBLE
 
-    return False, False
+    return False
 
   def save(self, *args, **kwargs):
     """ Automatically runs verification logic before saving to the database """
